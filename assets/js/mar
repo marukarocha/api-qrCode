@@ -1,0 +1,1531 @@
+uk/app/qrcode/assets/js/app_v4.js
+// API Track Plant v4.0 - JavaScript App Multi-Tipos
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuração dos tipos suportados
+    window.supportedTypes = {
+        'PLANT': {
+            name: 'Plantas',
+            icon: 'eco',
+            color: '#4CAF50',
+            fields: {
+                'name': 'Nome da Planta',
+                'species': 'Espécie',
+                'location': 'Localização',
+                'age': 'Idade',
+                'status': 'Status',
+                'care_level': 'Nível de Cuidado',
+                'last_watered': 'Última Rega',
+                'notes': 'Observações'
+            }
+        },
+        'PRODUCT': {
+            name: 'Produtos',
+            icon: 'shopping_cart',
+            color: '#2196F3',
+            fields: {
+                'name': 'Nome do Produto',
+                'category': 'Categoria',
+                'brand': 'Marca',
+                'price': 'Preço',
+                'status': 'Status',
+                'sku': 'SKU',
+                'supplier': 'Fornecedor',
+                'description': 'Descrição'
+            }
+        },
+        'EQUIPMENT': {
+            name: 'Equipamentos',
+            icon: 'build',
+            color: '#FF9800',
+            fields: {
+                'name': 'Nome do Equipamento',
+                'model': 'Modelo',
+                'serial': 'Número de Série',
+                'location': 'Localização',
+                'status': 'Status',
+                'maintenance_date': 'Última Manutenção',
+                'warranty': 'Garantia',
+                'responsible': 'Responsável'
+            }
+        },
+        'DOCUMENT': {
+            name: 'Documentos',
+            icon: 'description',
+            color: '#9C27B0',
+            fields: {
+                'name': 'Nome do Documento',
+                'type': 'Tipo',
+                'department': 'Departamento',
+                'version': 'Versão',
+                'status': 'Status',
+                'author': 'Autor',
+                'expiry_date': 'Data de Expiração',
+                'classification': 'Classificação'
+            }
+        },
+        'ASSET': {
+            name: 'Ativos',
+            icon: 'account_balance',
+            color: '#607D8B',
+            fields: {
+                'name': 'Nome do Ativo',
+                'value': 'Valor',
+                'condition': 'Condição',
+                'owner': 'Proprietário',
+                'status': 'Status',
+                'purchase_date': 'Data de Compra',
+                'depreciation': 'Depreciação',
+                'insurance': 'Seguro'
+            }
+        }
+    };
+    
+    // Inicializa componentes do Materialize
+    initializeMaterialize();
+    
+    // Gera cards de tipos
+    generateTypeCards();
+    
+    // Carrega lista inicial de QR Codes
+    loadQRList();
+    
+    // Configura event listeners
+    setupEventListeners();
+});
+
+// Inicialização do Materialize
+function initializeMaterialize() {
+    M.Tabs.init(document.querySelectorAll('.tabs'));
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.updateTextFields();
+}
+
+// Gerar cards de seleção de tipo
+function generateTypeCards() {
+    const container = document.getElementById('type-cards');
+    let html = '';
+    
+    Object.keys(window.supportedTypes).forEach(typeKey => {
+        const type = window.supportedTypes[typeKey];
+        html += `
+            <div class="col s12 m6 l4">
+                <div class="card type-card" onclick="selectType('${typeKey}')" data-type="${typeKey}">
+                    <div class="card-content center-align">
+                        <i class="material-icons large" style="color: ${type.color};">${type.icon}</i>
+                        <h6>${type.name}</h6>
+                        <p>${Object.keys(type.fields).length} campos disponíveis</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Selecionar tipo
+function selectType(typeKey) {
+    // Remove seleção anterior
+    document.querySelectorAll('.type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Adiciona seleção atual
+    document.querySelector(`[data-type="${typeKey}"]`).classList.add('selected');
+    
+    // Define tipo selecionado
+    document.getElementById('selected-type').value = typeKey;
+    
+    // Atualiza botão de geração
+    const generateBtn = document.getElementById('generate-btn');
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = `
+        <i class="material-icons left">qr_code</i>
+        Gerar QR Code - ${window.supportedTypes[typeKey].name}
+    `;
+    
+    // Mostra campos dinâmicos
+    document.getElementById('dynamic-fields').style.display = 'block';
+    
+    // Limpa campos existentes
+    document.getElementById('fields-container').innerHTML = '';
+    updateFieldsCounter();
+    
+    M.toast({
+        html: `<i class="material-icons left">${window.supportedTypes[typeKey].icon}</i>Tipo selecionado: ${window.supportedTypes[typeKey].name}`,
+        classes: 'blue rounded'
+    });
+}
+
+// Configuração dos event listeners
+function setupEventListeners() {
+    // Form de geração
+    document.getElementById('generateForm').addEventListener('submit', handleGenerateForm);
+    
+    // Busca em tempo real
+    document.getElementById('search-input').addEventListener('input', handleSearch);
+    
+    // Botão de refresh
+    document.getElementById('refresh-list').addEventListener('click', loadQRList);
+    
+    // Botão adicionar campo
+    document.getElementById('add-field-btn').addEventListener('click', showAddFieldModal);
+}
+
+// Modal para adicionar campo
+function showAddFieldModal() {
+    const typeKey = document.getElementById('selected-type').value;
+    if (!typeKey) return;
+    
+    const type = window.supportedTypes[typeKey];
+    let optionsHtml = '<option value="">Selecione um campo</option>';
+    
+    Object.keys(type.fields).forEach(fieldKey => {
+        // Verifica se o campo já foi adicionado
+        const existingField = document.querySelector(`[name="${fieldKey}"]`);
+        if (!existingField) {
+            optionsHtml += `<option value="${fieldKey}">${type.fields[fieldKey]}</option>`;
+        }
+    });
+    
+    const modalHtml = `
+        <div id="add-field-modal" class="modal">
+            <div class="modal-content">
+                <h4><i class="material-icons left">add</i>Adicionar Campo</h4>
+                <div class="input-field">
+                    <select id="field-select">
+                        ${optionsHtml}
+                    </select>
+                    <label for="field-select">Escolha um campo</label>
+                </div>
+                <div class="input-field">
+                    <input id="field-value" type="text" placeholder="Digite o valor...">
+                    <label for="field-value">Valor</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-flat waves-effect waves-light" onclick="closeAddFieldModal()">Cancelar</button>
+                <button class="btn waves-effect waves-light green" onclick="addCustomField()">Adicionar</button>
+            </div>
+        </div>
+    `;
+    
+    // Remove modal existente
+    const existingModal = document.getElementById('add-field-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Adiciona novo modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Inicializa modal
+    const modal = M.Modal.init(document.getElementById('add-field-modal'));
+    M.FormSelect.init(document.getElementById('field-select'));
+    modal.open();
+}
+
+// Adicionar campo customizado
+function addCustomField() {
+    const fieldKey = document.getElementById('field-select').value;
+    const fieldValue = document.getElementById('field-value').value.trim();
+    const typeKey = document.getElementById('selected-type').value;
+    
+    if (!fieldKey || !fieldValue) {
+        M.toast({
+            html: '<i class="material-icons left">warning</i>Selecione um campo e digite um valor',
+            classes: 'orange rounded'
+        });
+        return;
+    }
+    
+    const type = window.supportedTypes[typeKey];
+    const fieldLabel = type.fields[fieldKey];
+    
+    const fieldHtml = `
+        <div class="field-group" data-field="${fieldKey}">
+            <div class="row">
+                <div class="col s10">
+                    <input type="hidden" name="${fieldKey}" value="${fieldValue}">
+                    <p><strong>${fieldLabel}:</strong> ${fieldValue}</p>
+                </div>
+                <div class="col s2">
+                    <button type="button" class="btn-flat red-text" onclick="removeCustomField('${fieldKey}')">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('fields-container').insertAdjacentHTML('beforeend', fieldHtml);
+    updateFieldsCounter();
+    closeAddFieldModal();
+    
+    M.toast({
+        html: `<i class="material-icons left">add</i>Campo "${fieldLabel}" adicionado`,
+        classes: 'green rounded'
+    });
+}
+
+// Remover campo customizado
+function removeCustomField(fieldKey) {
+    document.querySelector(`[data-field="${fieldKey}"]`).remove();
+    updateFieldsCounter();
+    
+    M.toast({
+        html: '<i class="material-icons left">remove</i>Campo removido',
+        classes: 'orange rounded'
+    });
+}
+
+// Atualizar contador de campos
+function updateFieldsCounter() {
+    const count = document.querySelectorAll('.field-group').length;
+    document.getElementById('fields-counter').textContent = `${count} campo${count !== 1 ? 's' : ''}`;
+}
+
+// Fechar modal de adicionar campo
+function closeAddFieldModal() {
+    const modal = M.Modal.getInstance(document.getElementById('add-field-modal'));
+    if (modal) {
+        modal.close();
+        setTimeout(() => {
+            document.getElementById('add-field-modal').remove();
+        }, 300);
+    }
+}
+
+// Função para gerar QR Code
+async function handleGenerateForm(e) {
+    e.preventDefault();
+    
+    const typeKey = document.getElementById('selected-type').value;
+    const itemId = document.getElementById('item_id').value.trim();
+    const format = document.getElementById('format').value;
+    
+    if (!typeKey) {
+        showError('Selecione um tipo primeiro');
+        return;
+    }
+    
+    if (!itemId) {
+        showError('ID do item é obrigatório');
+        return;
+    }
+
+    showLoading(true);
+    hideMessages();
+
+    // Coleta todos os campos personalizados
+    const formData = new FormData(document.getElementById('generateForm'));
+    const requestData = {
+        type: typeKey,
+        item_id: itemId,
+        format: format
+    };
+    
+    // Adiciona campos personalizados
+    formData.forEach((value, key) => {
+        if (key !== 'type' && key !== 'item_id' && key !== 'format' && value.trim()) {
+            requestData[key] = value.trim();
+        }
+    });
+
+    try {
+        const response = await fetch('flutter_api_v4.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            showQRResult(data);
+            showSuccess(`QR Code ${data.type_name} gerado com sucesso!`);
+            
+            // Reset form
+            document.getElementById('item_id').value = '';
+            document.getElementById('fields-container').innerHTML = '';
+            updateFieldsCounter();
+            
+            // Atualiza a lista automaticamente
+            setTimeout(loadQRList, 1000);
+        } else {
+            showError(data.message || 'Erro ao gerar QR Code');
+        }
+    } catch (error) {
+        showError('Erro de conexão: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Função para carregar lista de QR Codes
+async function loadQRList() {
+    const listLoading = document.getElementById('list-loading');
+    listLoading.style.display = 'block';
+
+    const filterType = document.getElementById('filter-type')?.value || '';
+    const url = filterType ? `flutter_list_v4.php?type=${filterType}` : 'flutter_list_v4.php';
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayQRList(data.qr_codes);
+            displayTypeStats(data.by_type);
+        } else {
+            document.getElementById('qr-list').innerHTML = 
+                '<p class="red-text">Erro ao carregar lista: ' + data.message + '</p>';
+        }
+    } catch (error) {
+        document.getElementById('qr-list').innerHTML = 
+            '<p class="red-text">Erro de conexão: ' + error.message + '</p>';
+    } finally {
+        listLoading.style.display = 'none';
+    }
+}
+
+// Exibir estatísticas por tipo
+function displayTypeStats(byType) {
+    const container = document.getElementById('type-stats');
+    
+    if (!byType || byType.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    byType.forEach(typeData => {
+        html += `
+            <div class="col s12 m6 l4">
+                <div class="card" style="border-left: 4px solid ${typeData.color || '#607D8B'};">
+                    <div class="card-content">
+                        <div class="row valign-wrapper">
+                            <div class="col s3">
+                                <i class="material-icons large" style="color: ${typeData.color || '#607D8B'};">${typeData.icon || 'qr_code'}</i>
+                            </div>
+                            <div class="col s9">
+                                <h6>${typeData.name}</h6>
+                                <p><strong>${typeData.count}</strong> QR Code${typeData.count !== 1 ? 's' : ''}</p>
+                                <p><strong>${typeData.total_size_kb.toFixed(1)}</strong> KB total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+// Função para exibir lista de QR Codes
+function displayQRList(qrCodes) {
+    const listContainer = document.getElementById('qr-list');
+    
+    if (qrCodes.length === 0) {
+        listContainer.innerHTML = `
+            <div class="center-align" style="padding: 40px;">
+                <i class="material-icons large" style="color: var(--text-secondary);">qr_code</i>
+                <p class="grey-text">Nenhum QR Code encontrado.</p>
+                <p class="grey-text">Gere seu primeiro QR Code na aba "Gerar QR"</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="row">
+            <div class="col s12">
+                <div class="chip" style="background: var(--accent-color); color: var(--primary-color);">
+                    <i class="material-icons">analytics</i>
+                    Total: ${qrCodes.length} QR Codes
+                </div>
+            </div>
+        </div>
+    `;
+    
+    qrCodes.forEach((qr, index) => {
+        const createdDate = new Date(qr.created_at).toLocaleString('pt-BR');
+        const isRecent = (new Date() - new Date(qr.created_at)) < 24 * 60 * 60 * 1000; // 24 horas
+        
+        // Campos personalizados
+        let customFieldsHtml = '';
+        if (qr.custom_fields && Object.keys(qr.custom_fields).length > 0) {
+            customFieldsHtml = '<div class="col s12"><strong>📋 Campos:</strong><br>';
+            Object.keys(qr.custom_fields).forEach(field => {
+                customFieldsHtml += `<span class="chip">${field}: ${qr.custom_fields[field]}</span> `;
+            });
+            customFieldsHtml += '</div>';
+        }
+        
+        html += `
+            <div class="qr-item" data-index="${index}" style="border-left: 4px solid ${qr.type_color || '#607D8B'};">
+                <div class="row valign-wrapper">
+                    <div class="col s1">
+                        <label>
+                            <input type="checkbox" class="qr-checkbox" data-qr-id="${qr.qr_id}" 
+                                   onchange="updateDeleteButton()" />
+                            <span></span>
+                        </label>
+                    </div>
+                    <div class="col s12 m8 l8">
+                        <div class="row">
+                            <div class="col s12 m6">
+                                <p><i class="material-icons tiny" style="color: ${qr.type_color || '#607D8B'};">${qr.type_icon || 'qr_code'}</i> <strong>${qr.type_name}:</strong> ${qr.item_id} ${isRecent ? '<span class="new badge green" data-badge-caption="novo"></span>' : ''}</p>
+                                <p><strong>🔗 QR ID:</strong> <code style="background: var(--hover-bg); padding: 2px 6px; border-radius: 4px;">${qr.qr_id}</code></p>
+                            </div>
+                            <div class="col s12 m6">
+                                <p><strong>📅 Criado:</strong> ${createdDate}</p>
+                                <p><strong>💾 Tamanho:</strong> ${qr.size_kb} KB</p>
+                                <p><strong>📊 Campos:</strong> ${Object.keys(qr.custom_fields || {}).length}</p>
+                            </div>
+                            ${customFieldsHtml}
+                        </div>
+                    </div>
+                    <div class="col s12 m3 l3">
+                        <div class="row">
+                            <div class="col s12">
+                                <a href="${qr.qr_code_url}" target="_blank" 
+                                   class="btn waves-effect waves-light blue full-width">
+                                    <i class="material-icons left">visibility</i>
+                                    Ver QR
+                                </a>
+                            </div>
+                            <div class="col s12">
+                                <button onclick="copyToClipboard('${qr.qr_code_url}')"
+                                        class="btn waves-effect waves-light orange full-width">
+                                    <i class="material-icons left">content_copy</i>
+                                    Copiar URL
+                                </button>
+                            </div>
+                            <div class="col s12">
+                                <button onclick="deleteQRCode('${qr.qr_id}', '${qr.item_id}')"
+                                        class="btn waves-effect waves-light red full-width">
+                                    <i class="material-icons left">delete</i>
+                                    Deletar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    listContainer.innerHTML = html;
+    
+    // Atualiza badges
+    M.AutoInit();
+}
+
+// Filtrar por tipo
+function filterByType() {
+    loadQRList();
+}
+
+// Função para exibir resultado do QR gerado
+function showQRResult(data) {
+    document.getElementById('qr-result').style.display = 'block';
+    document.getElementById('qr-preview').innerHTML = 
+        `<img src="${data.qr_code_url}" alt="QR Code" style="width: 100%;">`;
+    
+    document.getElementById('result-type').textContent = data.type_name;
+    document.getElementById('result-item-id').textContent = data.item_id;
+    document.getElementById('result-qr-id').textContent = data.qr_id;
+    document.getElementById('result-structure').textContent = data.structure;
+    document.getElementById('result-fields-count').textContent = `${data.fields_count || 0} campos personalizados`;
+    document.getElementById('result-created').textContent = data.created_at;
+    
+    // Exibe campos personalizados
+    const customFieldsDiv = document.getElementById('custom-fields-display');
+    if (data.custom_fields && Object.keys(data.custom_fields).length > 0) {
+        let fieldsHtml = '<div class="divider" style="margin: 15px 0;"></div><h6>Campos Personalizados:</h6><div class="row">';
+        Object.keys(data.custom_fields).forEach(field => {
+            fieldsHtml += `<div class="col s12 m6"><span class="chip">${field}: ${data.custom_fields[field]}</span></div>`;
+        });
+        fieldsHtml += '</div>';
+        customFieldsDiv.innerHTML = fieldsHtml;
+    } else {
+        customFieldsDiv.innerHTML = '';
+    }
+    
+    document.getElementById('download-link').href = data.qr_code_url;
+    document.getElementById('copy-url').onclick = () => copyToClipboard(data.qr_code_url);
+    
+    // Scroll suave para o resultado
+    document.getElementById('qr-result').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Função de busca (adaptar para campos personalizados)
+function handleSearch() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    performSearch(searchTerm);
+}
+
+async function performSearch(searchTerm) {
+    if (searchTerm.length < 2) {
+        document.getElementById('search-results').innerHTML = `
+            <div class="center-align" style="padding: 20px;">
+                <i class="material-icons large" style="color: var(--text-secondary);">search</i>
+                <p class="grey-text">Digite pelo menos 2 caracteres para buscar</p>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        const response = await fetch('flutter_list_v4.php');
+        const data = await response.json();
+        
+        if (data.success) {
+            const filtered = data.qr_codes.filter(qr => {
+                // Busca em campos básicos
+                const basicMatch = qr.item_id.toLowerCase().includes(searchTerm) ||
+                                 qr.qr_id.toLowerCase().includes(searchTerm) ||
+                                 qr.type_name.toLowerCase().includes(searchTerm);
+                
+                // Busca em campos personalizados
+                let customMatch = false;
+                if (qr.custom_fields) {
+                    Object.values(qr.custom_fields).forEach(value => {
+                        if (value.toString().toLowerCase().includes(searchTerm)) {
+                            customMatch = true;
+                        }
+                    });
+                }
+                
+                return basicMatch || customMatch;
+            });
+            
+            displaySearchResults(filtered, searchTerm);
+        }
+    } catch (error) {
+        document.getElementById('search-results').innerHTML = 
+            '<p class="red-text">Erro na busca: ' + error.message + '</p>';
+    }
+}
+
+function displaySearchResults(results, searchTerm) {
+    const container = document.getElementById('search-results');
+    
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="center-align" style="padding: 20px;">
+                <i class="material-icons large" style="color: var(--text-secondary);">search_off</i>
+                <p class="grey-text">Nenhum resultado encontrado para "${searchTerm}"</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="row">
+            <div class="col s12">
+                <div class="chip" style="background: var(--accent-color); color: var(--primary-color);">
+                    <i class="material-icons">search</i>
+                    ${results.length} resultado(s) para "${searchTerm}"
+                </div>
+            </div>
+        </div>
+    `;
+    
+    results.forEach(qr => {
+        const createdDate = new Date(qr.created_at).toLocaleString('pt-BR');
+        
+        // Campos personalizados para busca
+        let customFieldsHtml = '';
+        if (qr.custom_fields && Object.keys(qr.custom_fields).length > 0) {
+            customFieldsHtml = '<p><strong>📋 Campos:</strong> ';
+            Object.keys(qr.custom_fields).forEach(field => {
+                const value = highlightSearchTerm(qr.custom_fields[field], searchTerm);
+                customFieldsHtml += `<span class="chip">${field}: ${value}</span> `;
+            });
+            customFieldsHtml += '</p>';
+        }
+        
+        html += `
+            <div class="qr-item" style="border-left: 4px solid ${qr.type_color || '#607D8B'};">
+                <div class="row valign-wrapper">
+                    <div class="col s12 m8">
+                        <p><i class="material-icons tiny" style="color: ${qr.type_color || '#607D8B'};">${qr.type_icon || 'qr_code'}</i> <strong>${qr.type_name}:</strong> ${highlightSearchTerm(qr.item_id, searchTerm)}</p>
+                        <p><strong>🔗 QR ID:</strong> <code style="background: var(--hover-bg); padding: 2px 6px; border-radius: 4px;">${highlightSearchTerm(qr.qr_id, searchTerm)}</code></p>
+                        <p><strong>📅 Criado:</strong> ${createdDate}</p>
+                        ${customFieldsHtml}
+                    </div>
+                    <div class="col s12 m4">
+                        <a href="${qr.qr_code_url}" target="_blank" 
+                           class="btn waves-effect waves-light blue full-width">
+                            <i class="material-icons left">visibility</i>
+                            Ver QR
+                        </a>
+                        <button onclick="copyToClipboard('${qr.qr_code_url}')"
+                                class="btn waves-effect waves-light orange full-width">
+                            <i class="material-icons left">content_copy</i>
+                            Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Highlight dos termos de busca
+function highlightSearchTerm(text, searchTerm) {
+    if (!searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark style="background: var(--accent-color); color: var(--primary-color); padding: 2px 4px; border-radius: 3px;">$1</mark>');
+}
+
+// Utility functions (manter as existentes)
+function showLoading(show) {
+    document.querySelector('.loading').style.display = show ? 'block' : 'none';
+}
+
+function showSuccess(message) {
+    const el = document.querySelector('.success-msg');
+    el.innerHTML = `<i class="material-icons left">check_circle</i>${message}`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function showError(message) {
+    const el = document.querySelector('.error-msg');
+    el.innerHTML = `<i class="material-icons left">error</i>${message}`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function hideMessages() {
+    document.querySelector('.success-msg').style.display = 'none';
+    document.querySelector('.error-msg').style.display = 'none';
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        M.toast({
+            html: '<i class="material-icons left">content_copy</i>URL copiada com sucesso!',
+            classes: 'green rounded'
+        });
+    }).catch(() => {
+        M.toast({
+            html: '<i class="material-icons left">error</i>Erro ao copiar URL',
+            classes: 'red rounded'
+        });
+    });
+}
+
+// Função para deletar QR Code (usar a v3 existente ou adaptar)
+async function deleteQRCode(qrId, itemId) {
+    if (!confirm(`🗑️ Confirmar Deleção\n\n🏷️ Item: ${itemId}\n🔗 QR ID: ${qrId}\n\n⚠️ Esta ação não pode ser desfeita.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('flutter_delete_v3.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qr_id: qrId })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            M.toast({
+                html: `<i class="material-icons left">delete</i>QR Code ${itemId} deletado com sucesso!`,
+                classes: 'green rounded'
+            });
+            
+            // Recarrega a lista
+            loadQRList();
+            
+            // Limpa os resultados de busca
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('search-input').value = '';
+        } else {
+            M.toast({
+                html: `<i class="material-icons left">error</i>Erro ao deletar: ${data.message}`,
+                classes: 'red rounded'
+            });
+        }
+    } catch (error) {
+        M.toast({
+            html: `<i class="material-icons left">error</i>Erro de conexão: ${error.message}`,
+            classes: 'red rounded'
+        });
+    }
+}
+
+// Funções para seleção múltipla (manter existentes)
+function updateDeleteButton() {
+    const checkboxes = document.querySelectorAll('.qr-checkbox:checked');// filepath: /home/maruk/app/qrcode/assets/js/app_v4.js
+// API Track Plant v4.0 - JavaScript App Multi-Tipos
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuração dos tipos suportados
+    window.supportedTypes = {
+        'PLANT': {
+            name: 'Plantas',
+            icon: 'eco',
+            color: '#4CAF50',
+            fields: {
+                'name': 'Nome da Planta',
+                'species': 'Espécie',
+                'location': 'Localização',
+                'age': 'Idade',
+                'status': 'Status',
+                'care_level': 'Nível de Cuidado',
+                'last_watered': 'Última Rega',
+                'notes': 'Observações'
+            }
+        },
+        'PRODUCT': {
+            name: 'Produtos',
+            icon: 'shopping_cart',
+            color: '#2196F3',
+            fields: {
+                'name': 'Nome do Produto',
+                'category': 'Categoria',
+                'brand': 'Marca',
+                'price': 'Preço',
+                'status': 'Status',
+                'sku': 'SKU',
+                'supplier': 'Fornecedor',
+                'description': 'Descrição'
+            }
+        },
+        'EQUIPMENT': {
+            name: 'Equipamentos',
+            icon: 'build',
+            color: '#FF9800',
+            fields: {
+                'name': 'Nome do Equipamento',
+                'model': 'Modelo',
+                'serial': 'Número de Série',
+                'location': 'Localização',
+                'status': 'Status',
+                'maintenance_date': 'Última Manutenção',
+                'warranty': 'Garantia',
+                'responsible': 'Responsável'
+            }
+        },
+        'DOCUMENT': {
+            name: 'Documentos',
+            icon: 'description',
+            color: '#9C27B0',
+            fields: {
+                'name': 'Nome do Documento',
+                'type': 'Tipo',
+                'department': 'Departamento',
+                'version': 'Versão',
+                'status': 'Status',
+                'author': 'Autor',
+                'expiry_date': 'Data de Expiração',
+                'classification': 'Classificação'
+            }
+        },
+        'ASSET': {
+            name: 'Ativos',
+            icon: 'account_balance',
+            color: '#607D8B',
+            fields: {
+                'name': 'Nome do Ativo',
+                'value': 'Valor',
+                'condition': 'Condição',
+                'owner': 'Proprietário',
+                'status': 'Status',
+                'purchase_date': 'Data de Compra',
+                'depreciation': 'Depreciação',
+                'insurance': 'Seguro'
+            }
+        }
+    };
+    
+    // Inicializa componentes do Materialize
+    initializeMaterialize();
+    
+    // Gera cards de tipos
+    generateTypeCards();
+    
+    // Carrega lista inicial de QR Codes
+    loadQRList();
+    
+    // Configura event listeners
+    setupEventListeners();
+});
+
+// Inicialização do Materialize
+function initializeMaterialize() {
+    M.Tabs.init(document.querySelectorAll('.tabs'));
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.updateTextFields();
+}
+
+// Gerar cards de seleção de tipo
+function generateTypeCards() {
+    const container = document.getElementById('type-cards');
+    let html = '';
+    
+    Object.keys(window.supportedTypes).forEach(typeKey => {
+        const type = window.supportedTypes[typeKey];
+        html += `
+            <div class="col s12 m6 l4">
+                <div class="card type-card" onclick="selectType('${typeKey}')" data-type="${typeKey}">
+                    <div class="card-content center-align">
+                        <i class="material-icons large" style="color: ${type.color};">${type.icon}</i>
+                        <h6>${type.name}</h6>
+                        <p>${Object.keys(type.fields).length} campos disponíveis</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Selecionar tipo
+function selectType(typeKey) {
+    // Remove seleção anterior
+    document.querySelectorAll('.type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Adiciona seleção atual
+    document.querySelector(`[data-type="${typeKey}"]`).classList.add('selected');
+    
+    // Define tipo selecionado
+    document.getElementById('selected-type').value = typeKey;
+    
+    // Atualiza botão de geração
+    const generateBtn = document.getElementById('generate-btn');
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = `
+        <i class="material-icons left">qr_code</i>
+        Gerar QR Code - ${window.supportedTypes[typeKey].name}
+    `;
+    
+    // Mostra campos dinâmicos
+    document.getElementById('dynamic-fields').style.display = 'block';
+    
+    // Limpa campos existentes
+    document.getElementById('fields-container').innerHTML = '';
+    updateFieldsCounter();
+    
+    M.toast({
+        html: `<i class="material-icons left">${window.supportedTypes[typeKey].icon}</i>Tipo selecionado: ${window.supportedTypes[typeKey].name}`,
+        classes: 'blue rounded'
+    });
+}
+
+// Configuração dos event listeners
+function setupEventListeners() {
+    // Form de geração
+    document.getElementById('generateForm').addEventListener('submit', handleGenerateForm);
+    
+    // Busca em tempo real
+    document.getElementById('search-input').addEventListener('input', handleSearch);
+    
+    // Botão de refresh
+    document.getElementById('refresh-list').addEventListener('click', loadQRList);
+    
+    // Botão adicionar campo
+    document.getElementById('add-field-btn').addEventListener('click', showAddFieldModal);
+}
+
+// Modal para adicionar campo
+function showAddFieldModal() {
+    const typeKey = document.getElementById('selected-type').value;
+    if (!typeKey) return;
+    
+    const type = window.supportedTypes[typeKey];
+    let optionsHtml = '<option value="">Selecione um campo</option>';
+    
+    Object.keys(type.fields).forEach(fieldKey => {
+        // Verifica se o campo já foi adicionado
+        const existingField = document.querySelector(`[name="${fieldKey}"]`);
+        if (!existingField) {
+            optionsHtml += `<option value="${fieldKey}">${type.fields[fieldKey]}</option>`;
+        }
+    });
+    
+    const modalHtml = `
+        <div id="add-field-modal" class="modal">
+            <div class="modal-content">
+                <h4><i class="material-icons left">add</i>Adicionar Campo</h4>
+                <div class="input-field">
+                    <select id="field-select">
+                        ${optionsHtml}
+                    </select>
+                    <label for="field-select">Escolha um campo</label>
+                </div>
+                <div class="input-field">
+                    <input id="field-value" type="text" placeholder="Digite o valor...">
+                    <label for="field-value">Valor</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-flat waves-effect waves-light" onclick="closeAddFieldModal()">Cancelar</button>
+                <button class="btn waves-effect waves-light green" onclick="addCustomField()">Adicionar</button>
+            </div>
+        </div>
+    `;
+    
+    // Remove modal existente
+    const existingModal = document.getElementById('add-field-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Adiciona novo modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Inicializa modal
+    const modal = M.Modal.init(document.getElementById('add-field-modal'));
+    M.FormSelect.init(document.getElementById('field-select'));
+    modal.open();
+}
+
+// Adicionar campo customizado
+function addCustomField() {
+    const fieldKey = document.getElementById('field-select').value;
+    const fieldValue = document.getElementById('field-value').value.trim();
+    const typeKey = document.getElementById('selected-type').value;
+    
+    if (!fieldKey || !fieldValue) {
+        M.toast({
+            html: '<i class="material-icons left">warning</i>Selecione um campo e digite um valor',
+            classes: 'orange rounded'
+        });
+        return;
+    }
+    
+    const type = window.supportedTypes[typeKey];
+    const fieldLabel = type.fields[fieldKey];
+    
+    const fieldHtml = `
+        <div class="field-group" data-field="${fieldKey}">
+            <div class="row">
+                <div class="col s10">
+                    <input type="hidden" name="${fieldKey}" value="${fieldValue}">
+                    <p><strong>${fieldLabel}:</strong> ${fieldValue}</p>
+                </div>
+                <div class="col s2">
+                    <button type="button" class="btn-flat red-text" onclick="removeCustomField('${fieldKey}')">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('fields-container').insertAdjacentHTML('beforeend', fieldHtml);
+    updateFieldsCounter();
+    closeAddFieldModal();
+    
+    M.toast({
+        html: `<i class="material-icons left">add</i>Campo "${fieldLabel}" adicionado`,
+        classes: 'green rounded'
+    });
+}
+
+// Remover campo customizado
+function removeCustomField(fieldKey) {
+    document.querySelector(`[data-field="${fieldKey}"]`).remove();
+    updateFieldsCounter();
+    
+    M.toast({
+        html: '<i class="material-icons left">remove</i>Campo removido',
+        classes: 'orange rounded'
+    });
+}
+
+// Atualizar contador de campos
+function updateFieldsCounter() {
+    const count = document.querySelectorAll('.field-group').length;
+    document.getElementById('fields-counter').textContent = `${count} campo${count !== 1 ? 's' : ''}`;
+}
+
+// Fechar modal de adicionar campo
+function closeAddFieldModal() {
+    const modal = M.Modal.getInstance(document.getElementById('add-field-modal'));
+    if (modal) {
+        modal.close();
+        setTimeout(() => {
+            document.getElementById('add-field-modal').remove();
+        }, 300);
+    }
+}
+
+// Função para gerar QR Code
+async function handleGenerateForm(e) {
+    e.preventDefault();
+    
+    const typeKey = document.getElementById('selected-type').value;
+    const itemId = document.getElementById('item_id').value.trim();
+    const format = document.getElementById('format').value;
+    
+    if (!typeKey) {
+        showError('Selecione um tipo primeiro');
+        return;
+    }
+    
+    if (!itemId) {
+        showError('ID do item é obrigatório');
+        return;
+    }
+
+    showLoading(true);
+    hideMessages();
+
+    // Coleta todos os campos personalizados
+    const formData = new FormData(document.getElementById('generateForm'));
+    const requestData = {
+        type: typeKey,
+        item_id: itemId,
+        format: format
+    };
+    
+    // Adiciona campos personalizados
+    formData.forEach((value, key) => {
+        if (key !== 'type' && key !== 'item_id' && key !== 'format' && value.trim()) {
+            requestData[key] = value.trim();
+        }
+    });
+
+    try {
+        const response = await fetch('flutter_api_v4.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            showQRResult(data);
+            showSuccess(`QR Code ${data.type_name} gerado com sucesso!`);
+            
+            // Reset form
+            document.getElementById('item_id').value = '';
+            document.getElementById('fields-container').innerHTML = '';
+            updateFieldsCounter();
+            
+            // Atualiza a lista automaticamente
+            setTimeout(loadQRList, 1000);
+        } else {
+            showError(data.message || 'Erro ao gerar QR Code');
+        }
+    } catch (error) {
+        showError('Erro de conexão: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Função para carregar lista de QR Codes
+async function loadQRList() {
+    const listLoading = document.getElementById('list-loading');
+    listLoading.style.display = 'block';
+
+    const filterType = document.getElementById('filter-type')?.value || '';
+    const url = filterType ? `flutter_list_v4.php?type=${filterType}` : 'flutter_list_v4.php';
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayQRList(data.qr_codes);
+            displayTypeStats(data.by_type);
+        } else {
+            document.getElementById('qr-list').innerHTML = 
+                '<p class="red-text">Erro ao carregar lista: ' + data.message + '</p>';
+        }
+    } catch (error) {
+        document.getElementById('qr-list').innerHTML = 
+            '<p class="red-text">Erro de conexão: ' + error.message + '</p>';
+    } finally {
+        listLoading.style.display = 'none';
+    }
+}
+
+// Exibir estatísticas por tipo
+function displayTypeStats(byType) {
+    const container = document.getElementById('type-stats');
+    
+    if (!byType || byType.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    byType.forEach(typeData => {
+        html += `
+            <div class="col s12 m6 l4">
+                <div class="card" style="border-left: 4px solid ${typeData.color || '#607D8B'};">
+                    <div class="card-content">
+                        <div class="row valign-wrapper">
+                            <div class="col s3">
+                                <i class="material-icons large" style="color: ${typeData.color || '#607D8B'};">${typeData.icon || 'qr_code'}</i>
+                            </div>
+                            <div class="col s9">
+                                <h6>${typeData.name}</h6>
+                                <p><strong>${typeData.count}</strong> QR Code${typeData.count !== 1 ? 's' : ''}</p>
+                                <p><strong>${typeData.total_size_kb.toFixed(1)}</strong> KB total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+// Função para exibir lista de QR Codes
+function displayQRList(qrCodes) {
+    const listContainer = document.getElementById('qr-list');
+    
+    if (qrCodes.length === 0) {
+        listContainer.innerHTML = `
+            <div class="center-align" style="padding: 40px;">
+                <i class="material-icons large" style="color: var(--text-secondary);">qr_code</i>
+                <p class="grey-text">Nenhum QR Code encontrado.</p>
+                <p class="grey-text">Gere seu primeiro QR Code na aba "Gerar QR"</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="row">
+            <div class="col s12">
+                <div class="chip" style="background: var(--accent-color); color: var(--primary-color);">
+                    <i class="material-icons">analytics</i>
+                    Total: ${qrCodes.length} QR Codes
+                </div>
+            </div>
+        </div>
+    `;
+    
+    qrCodes.forEach((qr, index) => {
+        const createdDate = new Date(qr.created_at).toLocaleString('pt-BR');
+        const isRecent = (new Date() - new Date(qr.created_at)) < 24 * 60 * 60 * 1000; // 24 horas
+        
+        // Campos personalizados
+        let customFieldsHtml = '';
+        if (qr.custom_fields && Object.keys(qr.custom_fields).length > 0) {
+            customFieldsHtml = '<div class="col s12"><strong>📋 Campos:</strong><br>';
+            Object.keys(qr.custom_fields).forEach(field => {
+                customFieldsHtml += `<span class="chip">${field}: ${qr.custom_fields[field]}</span> `;
+            });
+            customFieldsHtml += '</div>';
+        }
+        
+        html += `
+            <div class="qr-item" data-index="${index}" style="border-left: 4px solid ${qr.type_color || '#607D8B'};">
+                <div class="row valign-wrapper">
+                    <div class="col s1">
+                        <label>
+                            <input type="checkbox" class="qr-checkbox" data-qr-id="${qr.qr_id}" 
+                                   onchange="updateDeleteButton()" />
+                            <span></span>
+                        </label>
+                    </div>
+                    <div class="col s12 m8 l8">
+                        <div class="row">
+                            <div class="col s12 m6">
+                                <p><i class="material-icons tiny" style="color: ${qr.type_color || '#607D8B'};">${qr.type_icon || 'qr_code'}</i> <strong>${qr.type_name}:</strong> ${qr.item_id} ${isRecent ? '<span class="new badge green" data-badge-caption="novo"></span>' : ''}</p>
+                                <p><strong>🔗 QR ID:</strong> <code style="background: var(--hover-bg); padding: 2px 6px; border-radius: 4px;">${qr.qr_id}</code></p>
+                            </div>
+                            <div class="col s12 m6">
+                                <p><strong>📅 Criado:</strong> ${createdDate}</p>
+                                <p><strong>💾 Tamanho:</strong> ${qr.size_kb} KB</p>
+                                <p><strong>📊 Campos:</strong> ${Object.keys(qr.custom_fields || {}).length}</p>
+                            </div>
+                            ${customFieldsHtml}
+                        </div>
+                    </div>
+                    <div class="col s12 m3 l3">
+                        <div class="row">
+                            <div class="col s12">
+                                <a href="${qr.qr_code_url}" target="_blank" 
+                                   class="btn waves-effect waves-light blue full-width">
+                                    <i class="material-icons left">visibility</i>
+                                    Ver QR
+                                </a>
+                            </div>
+                            <div class="col s12">
+                                <button onclick="copyToClipboard('${qr.qr_code_url}')"
+                                        class="btn waves-effect waves-light orange full-width">
+                                    <i class="material-icons left">content_copy</i>
+                                    Copiar URL
+                                </button>
+                            </div>
+                            <div class="col s12">
+                                <button onclick="deleteQRCode('${qr.qr_id}', '${qr.item_id}')"
+                                        class="btn waves-effect waves-light red full-width">
+                                    <i class="material-icons left">delete</i>
+                                    Deletar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    listContainer.innerHTML = html;
+    
+    // Atualiza badges
+    M.AutoInit();
+}
+
+// Filtrar por tipo
+function filterByType() {
+    loadQRList();
+}
+
+// Função para exibir resultado do QR gerado
+function showQRResult(data) {
+    document.getElementById('qr-result').style.display = 'block';
+    document.getElementById('qr-preview').innerHTML = 
+        `<img src="${data.qr_code_url}" alt="QR Code" style="width: 100%;">`;
+    
+    document.getElementById('result-type').textContent = data.type_name;
+    document.getElementById('result-item-id').textContent = data.item_id;
+    document.getElementById('result-qr-id').textContent = data.qr_id;
+    document.getElementById('result-structure').textContent = data.structure;
+    document.getElementById('result-fields-count').textContent = `${data.fields_count || 0} campos personalizados`;
+    document.getElementById('result-created').textContent = data.created_at;
+    
+    // Exibe campos personalizados
+    const customFieldsDiv = document.getElementById('custom-fields-display');
+    if (data.custom_fields && Object.keys(data.custom_fields).length > 0) {
+        let fieldsHtml = '<div class="divider" style="margin: 15px 0;"></div><h6>Campos Personalizados:</h6><div class="row">';
+        Object.keys(data.custom_fields).forEach(field => {
+            fieldsHtml += `<div class="col s12 m6"><span class="chip">${field}: ${data.custom_fields[field]}</span></div>`;
+        });
+        fieldsHtml += '</div>';
+        customFieldsDiv.innerHTML = fieldsHtml;
+    } else {
+        customFieldsDiv.innerHTML = '';
+    }
+    
+    document.getElementById('download-link').href = data.qr_code_url;
+    document.getElementById('copy-url').onclick = () => copyToClipboard(data.qr_code_url);
+    
+    // Scroll suave para o resultado
+    document.getElementById('qr-result').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Função de busca (adaptar para campos personalizados)
+function handleSearch() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    performSearch(searchTerm);
+}
+
+async function performSearch(searchTerm) {
+    if (searchTerm.length < 2) {
+        document.getElementById('search-results').innerHTML = `
+            <div class="center-align" style="padding: 20px;">
+                <i class="material-icons large" style="color: var(--text-secondary);">search</i>
+                <p class="grey-text">Digite pelo menos 2 caracteres para buscar</p>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        const response = await fetch('flutter_list_v4.php');
+        const data = await response.json();
+        
+        if (data.success) {
+            const filtered = data.qr_codes.filter(qr => {
+                // Busca em campos básicos
+                const basicMatch = qr.item_id.toLowerCase().includes(searchTerm) ||
+                                 qr.qr_id.toLowerCase().includes(searchTerm) ||
+                                 qr.type_name.toLowerCase().includes(searchTerm);
+                
+                // Busca em campos personalizados
+                let customMatch = false;
+                if (qr.custom_fields) {
+                    Object.values(qr.custom_fields).forEach(value => {
+                        if (value.toString().toLowerCase().includes(searchTerm)) {
+                            customMatch = true;
+                        }
+                    });
+                }
+                
+                return basicMatch || customMatch;
+            });
+            
+            displaySearchResults(filtered, searchTerm);
+        }
+    } catch (error) {
+        document.getElementById('search-results').innerHTML = 
+            '<p class="red-text">Erro na busca: ' + error.message + '</p>';
+    }
+}
+
+function displaySearchResults(results, searchTerm) {
+    const container = document.getElementById('search-results');
+    
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="center-align" style="padding: 20px;">
+                <i class="material-icons large" style="color: var(--text-secondary);">search_off</i>
+                <p class="grey-text">Nenhum resultado encontrado para "${searchTerm}"</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="row">
+            <div class="col s12">
+                <div class="chip" style="background: var(--accent-color); color: var(--primary-color);">
+                    <i class="material-icons">search</i>
+                    ${results.length} resultado(s) para "${searchTerm}"
+                </div>
+            </div>
+        </div>
+    `;
+    
+    results.forEach(qr => {
+        const createdDate = new Date(qr.created_at).toLocaleString('pt-BR');
+        
+        // Campos personalizados para busca
+        let customFieldsHtml = '';
+        if (qr.custom_fields && Object.keys(qr.custom_fields).length > 0) {
+            customFieldsHtml = '<p><strong>📋 Campos:</strong> ';
+            Object.keys(qr.custom_fields).forEach(field => {
+                const value = highlightSearchTerm(qr.custom_fields[field], searchTerm);
+                customFieldsHtml += `<span class="chip">${field}: ${value}</span> `;
+            });
+            customFieldsHtml += '</p>';
+        }
+        
+        html += `
+            <div class="qr-item" style="border-left: 4px solid ${qr.type_color || '#607D8B'};">
+                <div class="row valign-wrapper">
+                    <div class="col s12 m8">
+                        <p><i class="material-icons tiny" style="color: ${qr.type_color || '#607D8B'};">${qr.type_icon || 'qr_code'}</i> <strong>${qr.type_name}:</strong> ${highlightSearchTerm(qr.item_id, searchTerm)}</p>
+                        <p><strong>🔗 QR ID:</strong> <code style="background: var(--hover-bg); padding: 2px 6px; border-radius: 4px;">${highlightSearchTerm(qr.qr_id, searchTerm)}</code></p>
+                        <p><strong>📅 Criado:</strong> ${createdDate}</p>
+                        ${customFieldsHtml}
+                    </div>
+                    <div class="col s12 m4">
+                        <a href="${qr.qr_code_url}" target="_blank" 
+                           class="btn waves-effect waves-light blue full-width">
+                            <i class="material-icons left">visibility</i>
+                            Ver QR
+                        </a>
+                        <button onclick="copyToClipboard('${qr.qr_code_url}')"
+                                class="btn waves-effect waves-light orange full-width">
+                            <i class="material-icons left">content_copy</i>
+                            Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Highlight dos termos de busca
+function highlightSearchTerm(text, searchTerm) {
+    if (!searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark style="background: var(--accent-color); color: var(--primary-color); padding: 2px 4px; border-radius: 3px;">$1</mark>');
+}
+
+// Utility functions (manter as existentes)
+function showLoading(show) {
+    document.querySelector('.loading').style.display = show ? 'block' : 'none';
+}
+
+function showSuccess(message) {
+    const el = document.querySelector('.success-msg');
+    el.innerHTML = `<i class="material-icons left">check_circle</i>${message}`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function showError(message) {
+    const el = document.querySelector('.error-msg');
+    el.innerHTML = `<i class="material-icons left">error</i>${message}`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function hideMessages() {
+    document.querySelector('.success-msg').style.display = 'none';
+    document.querySelector('.error-msg').style.display = 'none';
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        M.toast({
+            html: '<i class="material-icons left">content_copy</i>URL copiada com sucesso!',
+            classes: 'green rounded'
+        });
+    }).catch(() => {
+        M.toast({
+            html: '<i class="material-icons left">error</i>Erro ao copiar URL',
+            classes: 'red rounded'
+        });
+    });
+}
+
+// Função para deletar QR Code (usar a v3 existente ou adaptar)
+async function deleteQRCode(qrId, itemId) {
+    if (!confirm(`🗑️ Confirmar Deleção\n\n🏷️ Item: ${itemId}\n🔗 QR ID: ${qrId}\n\n⚠️ Esta ação não pode ser desfeita.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('flutter_delete_v3.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qr_id: qrId })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            M.toast({
+                html: `<i class="material-icons left">delete</i>QR Code ${itemId} deletado com sucesso!`,
+                classes: 'green rounded'
+            });
+            
+            // Recarrega a lista
+            loadQRList();
+            
+            // Limpa os resultados de busca
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('search-input').value = '';
+        } else {
+            M.toast({
+                html: `<i class="material-icons left">error</i>Erro ao deletar: ${data.message}`,
+                classes: 'red rounded'
+            });
+        }
+    } catch (error) {
+        M.toast({
+            html: `<i class="material-icons left">error</i>Erro de conexão: ${error.message}`,
+            classes: 'red rounded'
+        });

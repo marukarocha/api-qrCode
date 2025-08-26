@@ -1,0 +1,598 @@
+/* Dark Mode Theme - API Track Plant */
+:root {
+    /* Brand Colors - Dark Theme */
+    --primary-color: #4b986c;
+    /* Primary verde */
+    --secondary-color: #928163;
+    /* Secondary marrom */
+    --tertiary-color: #6d604a;
+    /* Tertiary marrom escuro */
+    --alternate-color: #17282e;
+    /* Alternate azul escuro */
+
+    /* Text Colors */
+    --text-primary: #ffffff;
+    /* Primary Text branco */
+    --text-secondary: #658593;
+    /* Secondary Text azul acinzentado */
+
+    /* Background Colors */
+    --bg-primary: #0b191e;
+    /* Primary Background escuro */
+    --bg-secondary: #0d1e23;
+    /* Secondary Background */
+
+    /* Accent Colors */
+    --accent-1: #4d4b986c;
+    /* Accent 1 verde */
+    --accent-2: #4928163;
+    /* Accent 2 marrom */
+    --accent-3: #4c6d604a;
+    /* Accent 3 marrom escuro */
+    --accent-4: #2b6191e;
+    /* Accent 4 azul */
+
+    /* Semantic Colors */
+    --success-color: #33aa4e;
+    /* Success verde */
+    --error-color: #c4454d;
+    /* Error vermelho */
+    --warning-color: #f3c944;
+    /* Warning amarelo */
+    --info-color: #ffffff;
+    /* Info branco */
+
+    /* Derived colors for better UX */
+    --border-color: rgba(101, 133, 147, 0.2);
+    --hover-bg: rgba(75, 152, 108, 0.1);
+    --card-bg: var(--bg-secondary);
+
+    /* Shadows */
+    --shadow-light: 0 4px 20px rgba(75, 152, 108, 0.2);
+    --shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-heavy: 0 12px 40px rgba(75, 152, 108, 0.3);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* Navigation */
+.navbar-custom {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    box-shadow: var(--shadow-light);
+    border-bottom: 2px solid var(--primary-color);
+    backdrop-filter: blur(10px);
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    font-weight: 300;
+    font-size: 1.5rem !important;
+}
+
+.brand-logo i {
+    margin-right: 10px;
+    color: var(--primary-color);
+}
+
+/* Cards */
+.card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-medium);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+    border-color: var(--primary-color);
+}
+
+.card-content {
+    color: var(--text-primary) !important;
+}
+
+.card-title {
+    color: var(--text-primary) !important;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+}
+
+.card-title i {
+    margin-right: 10px;
+    color: var(--primary-color);
+}
+
+/* Structure Info */
+.structure-info {
+    background-image: url('../img/features.png');
+    /* background-image: url('../img/about_seedApp.png'); */
+    background-size: contain;
+    background-position: top right;
+    background-repeat: no-repeat;
+    position: relative;
+    background-color: rgb(29, 36, 44);
+    color: var(--text-primary);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    border: none;
+    box-shadow: var(--shadow-light);
+}
+
+svg.caret {
+    fill: #479167 !important;
+}
+
+.structure-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(11, 25, 30, 0.9);
+    /* Overlay semi-transparente */
+    border-radius: 12px;
+    z-index: 1;
+}
+
+.structure-info>* {
+    position: relative;
+    z-index: 2;
+}
+
+/* QR Items */
+.qr-item {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    background: var(--card-bg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(75, 152, 108, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.qr-item:hover::before {
+    left: 100%;
+}
+
+.qr-item:hover {
+    background: var(--hover-bg);
+    border-color: var(--primary-color);
+    transform: translateX(8px) translateY(-2px);
+    box-shadow: var(--shadow-light);
+}
+
+/* Tabs */
+.tabs {
+    background-color: var(--bg-secondary) !important;
+    border-radius: 8px 8px 0 0;
+}
+
+.tabs .tab a {
+    color: var(--text-secondary) !important;
+    transition: all 0.3s ease;
+}
+
+.tabs .tab a:hover {
+    color: var(--primary-color) !important;
+}
+
+.tabs .tab a.active {
+    color: var(--primary-color) !important;
+}
+
+.tabs .indicator {
+    background-color: var(--primary-color) !important;
+    height: 3px;
+}
+
+.tab-content {
+    padding: 20px 0;
+}
+
+/* Forms */
+.input-field input[type=text]:focus,
+.input-field input[type=text]:focus+label,
+.input-field input[type=text].valid+label {
+    color: var(--primary-color) !important;
+}
+
+.input-field input[type=text] {
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+.input-field input[type=text]:focus {
+    border-bottom: 2px solid var(--primary-color) !important;
+    box-shadow: 0 1px 0 0 var(--primary-color) !important;
+}
+
+.input-field label {
+    color: var(--text-secondary) !important;
+}
+
+.helper-text {
+    color: var(--text-secondary) !important;
+    font-size: 0.9rem;
+}
+
+/* Dropdowns */
+.dropdown-content {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-medium);
+}
+
+.dropdown-content li>a,
+.dropdown-content li>span {
+    color: var(--text-primary) !important;
+}
+
+.dropdown-content li:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px !important;
+    text-transform: none !important;
+    font-weight: 500 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn.green {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--success-color) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(75, 152, 108, 0.3) !important;
+}
+
+.btn.green:hover {
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--primary-color) 100%) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(75, 152, 108, 0.5) !important;
+}
+
+.btn.blue {
+    background: linear-gradient(135deg, var(--alternate-color) 0%, var(--text-secondary) 100%) !important;
+}
+
+.btn.orange {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #d4a017 100%) !important;
+}
+
+.btn.red {
+    background: linear-gradient(135deg, var(--error-color) 0%, #a13940 100%) !important;
+}
+
+.btn.grey {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--tertiary-color) 100%) !important;
+}
+
+/* QR Preview */
+.qr-preview {
+    max-width: 200px;
+    margin: 20px auto;
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    padding: 10px;
+    background: white;
+}
+
+.qr-preview img {
+    border-radius: 8px;
+}
+
+/* Loading */
+.loading {
+    display: none;
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Messages */
+.success-msg,
+.error-msg {
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    display: none;
+    font-weight: 500;
+}
+
+.success-msg {
+    background: rgba(51, 170, 78, 0.2);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.error-msg {
+    background: rgba(196, 69, 77, 0.2);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+}
+
+/* Status indicators */
+.status-online {
+    color: var(--success-color) !important;
+}
+
+.status-offline {
+    color: var(--error-color) !important;
+}
+
+.status-warning {
+    color: var(--warning-color) !important;
+}
+
+/* Checkboxes */
+[type="checkbox"]:checked+span:not(.lever):before {
+    border-right: 2px solid var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Toast customization */
+.toast {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+/* Progress indicators */
+.progress-bar {
+    background-color: var(--border-color);
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Interactive elements */
+.clickable {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clickable:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Documentation specific styles */
+.endpoint-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    transition: all 0.3s ease;
+}
+
+.endpoint-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-light);
+}
+
+.method-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: white;
+    margin-right: 10px;
+}
+
+.method-post {
+    background: var(--success-color);
+}
+
+.method-get {
+    background: var(--alternate-color);
+}
+
+.method-delete {
+    background: var(--error-color);
+}
+
+.code-block {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    overflow-x: auto;
+}
+
+.code-block pre {
+    margin: 0;
+    color: var(--primary-color);
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+}
+
+.quick-links {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    z-index: 1000;
+    box-shadow: var(--shadow-medium);
+}
+
+.quick-links strong {
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.quick-links a {
+    display: block;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin: 5px 0;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.quick-links a:hover {
+    color: var(--primary-color);
+    background: var(--hover-bg);
+}
+
+@media (max-width: 992px) {
+    .quick-links {
+        display: none;
+    }
+}
+
+/* Responsive */
+@media only screen and (max-width: 600px) {
+    .container {
+        width: 95%;
+    }
+
+    .brand-logo {
+        font-size: 1.2rem !important;
+    }
+
+    .btn.small {
+        margin: 2px;
+    }
+
+    .qr-item {
+        padding: 15px;
+    }
+
+    .structure-info {
+        padding: 15px;
+        margin: 15px 0;
+    }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--success-color);
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card,
+.qr-item {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Focus states */
+.btn:focus,
+.btn-large:focus {
+    background-color: var(--success-color) !important;
+}
+
+/* Material Icons adjustments */
+.material-icons {
+    vertical-align: middle;
+}
+
+/* Container adjustments */
+.container {
+    max-width: 1280px;
+}

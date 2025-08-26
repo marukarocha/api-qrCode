@@ -1,0 +1,53 @@
+[
+    {
+        "qr_id": "qr_PLT001_20250821_68a74ba1b3448",
+        "plant_id": "PLT001",
+        "filename": "qr_PLT001_20250821_68a74ba1b3448.svg",
+        "filepath": "qrcodes\/qr_PLT001_20250821_68a74ba1b3448.svg",
+        "qr_code_url": "https:\/\/qrcode.seedapp.dev\/qrcodes\/qr_PLT001_20250821_68a74ba1b3448.svg",
+        "created_at": "2025-08-21 13:38:57",
+        "timestamp": 1755794337,
+        "size": 20562
+    },
+    {
+        "qr_id": "qr_PLT001_20250821_68a74e205a276",
+        "plant_id": "PLT001",
+        "filename": "qr_PLT001_20250821_68a74e205a276.svg",
+        "filepath": "qrcodes\/qr_PLT001_20250821_68a74e205a276.svg",
+        "qr_code_url": "https:\/\/qrcode.seedapp.dev\/qrcodes\/qr_PLT001_20250821_68a74e205a276.svg",
+        "created_at": "2025-08-21 13:49:36",
+        "timestamp": 1755794976,
+        "size": 20562
+    },
+    {
+        "qr_id": "asdas-20250825-2dc0b326",
+        "plant_id": "asdas",
+        "plant_name": "Azul",
+        "plant_status": "Saudável",
+        "plant_type": "Suculenta",
+        "plant_species": "",
+        "plant_location": "",
+        "plant_age": "",
+        "plant_notes": "",
+        "filename": "asdas-20250825-2dc0b326.png",
+        "filepath": "qrcodes\/asdas-20250825-2dc0b326.png",
+        "qr_code_url": "http:\/localhost:8000\/qrcodes\/asdas-20250825-2dc0b326.png",
+        "format": "png",
+        "created_at": "2025-08-25 13:51:14",
+        "structure": "asdas-20250825",
+        "hash": "2dc0b326",
+        "size_kb": 65.27,
+        "qr_data_content": {
+            "id": "asdas",
+            "qr_id": "asdas-20250825-2dc0b326",
+            "created": "2025-08-25 13:51:14",
+            "name": "Azul",
+            "status": "Saudável",
+            "type": "Suculenta",
+            "timestamp": "2025-08-25T13:51:14-03:00",
+            "system": "TrackPlant_v3"
+        },
+        "qr_data_size": 199,
+        "include_timestamp": true
+    }
+]

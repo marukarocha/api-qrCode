@@ -1,0 +1,65 @@
+{
+    "title": "QR Code Plant API Response",
+    "type": "object",
+    "properties": {
+        "success": {
+            "type": "boolean",
+            "description": "Indica se a operação foi bem-sucedida"
+        },
+        "message": {
+            "type": "string",
+            "description": "Mensagem de status da operação"
+        },
+        "qr_code_url": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "URL completa do arquivo SVG do QR Code gerado"
+        },
+        "plant_id": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "ID da planta que foi usado para gerar o QR Code"
+        },
+        "qr_id": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "ID único do QR Code gerado para rastreamento"
+        },
+        "created_at": {
+            "type": "string",
+            "description": "Data e hora de criação no formato YYYY-MM-DD HH:mm:ss"
+        }
+    },
+    "required": [
+        "success",
+        "message",
+        "qr_code_url",
+        "plant_id",
+        "qr_id",
+        "created_at"
+    ],
+    "examples": [
+        {
+            "success": true,
+            "message": "QR Code gerado com sucesso",
+            "qr_code_url": "https://seudominio.com/qrcode/qrcodes/plant_64f8b2a1c4d65.12345678_1755787234.svg",
+            "plant_id": "PLANTA_001",
+            "qr_id": "plant_64f8b2a1c4d65.12345678",
+            "created_at": "2025-08-21 15:30:45"
+        },
+        {
+            "success": false,
+            "message": "Campo 'data' é obrigatório",
+            "qr_code_url": null,
+            "plant_id": null,
+            "qr_id": null,
+            "created_at": "2025-08-21 15:30:45"
+        }
+    ]
+}
