@@ -210,3 +210,6 @@ Exemplo: `qr_67890abcdef12345.00000000_1755784567_a1b2c3d4.svg`
 ---
 
 **🎯 Pronto para produção e integração com FlutterFlow! 🚀**
+
+# api-qrCode
+Projeto para de uma api em php que gera qrcode com informações do Flutter e Json 
